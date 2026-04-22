@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-log-service
+  namespace: audit-log
+  labels:
+    app: audit-log-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-log-service
+  template:
+    metadata:
+      labels:
+        app: audit-log-service
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/OWNER/audit-log-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: audit-log-service-config
+            - secretRef:
+                name: audit-log-service-secret
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
