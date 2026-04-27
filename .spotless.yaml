@@ -1,0 +1,11 @@
+version: 2
+formats:
+  - googleJavaFormat:
+      aosp: false
+      style: GOOGLE
+      replaceDirectionInSourceCodeComment: true
+  - removeUnusedImports:
+  - trailingWhitespace:
+  - fileternaries:
+      includes:
+        - "**/*.java"

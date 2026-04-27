@@ -38,3 +38,6 @@ Thumbs.db
 ### Local env ###
 .env
 *.local
+
+### Spotless ###
+.spotless/
