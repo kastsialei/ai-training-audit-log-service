@@ -13,8 +13,8 @@ src/main/java/net/sam/ai/engineering/audit/
 ```
 
 Dependencies point inward: `api → application → domain`, infrastructure plugs
-into application ports. EF/JPA and other framework concerns live only in
-`infrastructure`.
+into application ports. See `ARCHITECTURE.md` for layering rules, naming
+conventions, and the full repo map.
 
 ## Local dev
 
@@ -39,8 +39,7 @@ curl localhost:8080/actuator/health
 ```
 
 - Unit tests: `*Test` (surefire) — JUnit 5 + AssertJ.
-- Integration tests: `*IntegrationTest` (failsafe) — Testcontainers spins
-  up Postgres 16.
+- Integration tests: `*IT` (failsafe) — Testcontainers spins up Postgres 16.
 
 ## Docker image
 
