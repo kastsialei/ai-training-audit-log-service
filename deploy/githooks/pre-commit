@@ -1,27 +1,33 @@
 #!/bin/bash
 # Pre-commit hook: run spotless:apply on staged Java files
-# Requires: Maven, Java 21
+# Uses the bundled Maven wrapper (./mvnw); does not require Maven on PATH.
 
 set -e
 
-STAGED_JAVA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.java$' | wc -l)
+STAGED_JAVA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -c '\.java$' || true)
 
 if [ "$STAGED_JAVA_FILES" -eq 0 ]; then
     exit 0
 fi
 
-echo "[pre-commit] Spotless: checking formatting..."
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+MVNW="$REPO_ROOT/mvnw"
 
-mvn spotless:apply -q
-
-if [ $? -ne 0 ]; then
-    echo "[pre-commit] Spotless failed. Fix errors and re-stage."
+if [ ! -x "$MVNW" ]; then
+    echo "[pre-commit] $MVNW not found or not executable." >&2
     exit 1
 fi
 
-STAGED_CHANGES=$(git diff --name-only --diff-filter=ACM)
+echo "[pre-commit] Spotless: checking formatting..."
 
-if [ -n "$STAGED_CHANGES" ]; then
+if ! "$MVNW" -q spotless:apply; then
+    echo "[pre-commit] Spotless failed. Fix errors and re-stage." >&2
+    exit 1
+fi
+
+REFORMATTED=$(git diff --name-only --diff-filter=ACM)
+
+if [ -n "$REFORMATTED" ]; then
     echo "[pre-commit] Spotless reformatted files. Re-staging..."
     git add --renormalize .
 fi

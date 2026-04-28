@@ -8,13 +8,13 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
 
 ## Quick refs
 
-| Topic | Path / Command |
-|---|---|
-| Full conventions | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Product glossary | [product.md](product.md) |
-| Run locally | `docker compose -f deploy/docker-compose.yml up -d` |
-| Format code | `mvn spotless:apply` |
-| CI pipeline | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
+| Topic | Path / Command                                             |
+|---|------------------------------------------------------------|
+| Full conventions | [ARCHITECTURE.md](ARCHITECTURE.md)                         |
+| Product glossary | [product.md](product.md)                                   |
+| Run locally | `docker compose -f deploy/docker-compose.yml up -d`        |
+| Format code | `mvn spotless:apply`                                       |
+| CI pipeline | [.github/workflows/build.yml](.github/workflows/build.yml) |
 
 ## Where things live
 
@@ -33,6 +33,8 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
 - **Simplicity first.** Minimum code that solves the problem. Nothing speculative.
 - **Surgical changes.** Touch only what you must. Don't "improve" adjacent code.
 - **Goal-driven.** Transform tasks into verifiable goals. Test before, test after.
+- **Commit early, commit often.** Small commits with clear messages. Don't bundle unrelated changes. Maximum 5-7 files with 300-500 lines changed per commit.
+- **Test-driven.** Write tests first. Make them fail. Then implement. Then make them pass.
 - **Layering.** Domain → Application → Infrastructure → API. Dependencies inward only.
 - **Schema via migrations.** Never edit applied migrations.
 - **UTC everywhere.** Server is source of truth for timestamps.

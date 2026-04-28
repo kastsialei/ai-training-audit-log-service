@@ -1,0 +1,156 @@
+### Health check
+GET {{host}}/api/health
+
+> {%
+    client.test("status is 200", () => client.assert(response.status === 200));
+    client.test("status field is UP", () => client.assert(response.body.status === "UP"));
+%}
+
+
+### Ingest a full event (happy path)
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "alice@example.com",
+  "event_type": "user.login",
+  "resource": "user:42",
+  "outcome": "SUCCESS",
+  "context": {"ip": "10.0.0.1", "ua": "curl/8.6"}
+}
+
+> {%
+    client.test("status is 201", () => client.assert(response.status === 201));
+    client.test("server-assigned id (UUID)", () => {
+        const id = response.body.id;
+        client.assert(typeof id === "string" && /^[0-9a-f-]{36}$/.test(id), "id is not a UUID: " + id);
+    });
+    client.test("server-assigned recorded_at", () => {
+        client.assert(typeof response.body.recorded_at === "string" && response.body.recorded_at.length > 0);
+    });
+    client.test("echoes payload", () => {
+        client.assert(response.body.actor === "alice@example.com");
+        client.assert(response.body.event_type === "user.login");
+        client.assert(response.body.resource === "user:42");
+        client.assert(response.body.outcome === "SUCCESS");
+        client.assert(response.body.context.ip === "10.0.0.1");
+    });
+    client.global.set("lastEventId", response.body.id);
+%}
+
+
+### Ingest a minimal event (no outcome, empty context)
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "svc-billing",
+  "event_type": "invoice.issued",
+  "resource": "invoice:777",
+  "context": {}
+}
+
+> {%
+    client.test("status is 201", () => client.assert(response.status === 201));
+    client.test("outcome is null", () => client.assert(response.body.outcome === null));
+    client.test("context is empty object", () => {
+        client.assert(typeof response.body.context === "object" && Object.keys(response.body.context).length === 0);
+    });
+%}
+
+
+### Reject — missing actor
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "event_type": "user.login",
+  "resource": "user:42",
+  "context": {}
+}
+
+> {%
+    client.test("status is 400", () => client.assert(response.status === 400));
+%}
+
+
+### Reject — blank event_type
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "alice@example.com",
+  "event_type": "   ",
+  "resource": "user:42",
+  "context": {}
+}
+
+> {%
+    client.test("status is 400", () => client.assert(response.status === 400));
+%}
+
+
+### Reject — missing resource
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "alice@example.com",
+  "event_type": "user.login",
+  "context": {}
+}
+
+> {%
+    client.test("status is 400", () => client.assert(response.status === 400));
+%}
+
+
+### Reject — null context
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "alice@example.com",
+  "event_type": "user.login",
+  "resource": "user:42",
+  "context": null
+}
+
+> {%
+    client.test("status is 400", () => client.assert(response.status === 400));
+%}
+
+
+### Reject — unknown outcome value
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "alice@example.com",
+  "event_type": "user.login",
+  "resource": "user:42",
+  "outcome": "MAYBE",
+  "context": {}
+}
+
+> {%
+    client.test("status is 400", () => client.assert(response.status === 400));
+%}
+
+
+### Reject — denied outcome (still a valid request, just different value)
+POST {{host}}/audit-events
+Content-Type: application/json
+
+{
+  "actor": "mallory@example.com",
+  "event_type": "policy.access_denied",
+  "resource": "policy:secret-room",
+  "outcome": "DENIED",
+  "context": {"reason": "missing role"}
+}
+
+> {%
+    client.test("status is 201", () => client.assert(response.status === 201));
+    client.test("outcome is DENIED", () => client.assert(response.body.outcome === "DENIED"));
+%}
