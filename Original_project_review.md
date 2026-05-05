@@ -39,7 +39,7 @@
 | --- | --- | --- |---------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | Feedback signals      |    |   | lint+units                                  |                                                                                           | Есть линтер и юнит тесты, интегрейшен только локально                                                 |
 | Context substrate     |    |   | claude.md, plugin to run tests/ruff/pycheck |                                                                                           | часть skill-ов явно не у всех разрабов, PRD слишком абстрактны и не переработаны во чтото проверяемое |   
-| Blast radius control  |    | X / частично, иногда сразу на main  |                                             | нет pre-commit / условный branch protection / localhost as sandbox (with restored DEV db) |
+| Blast radius control  |    | X / частично, иногда сразу на main  |                                      |       | нет pre-commit / условный branch protection / localhost as sandbox (with restored DEV db) |
 
 
 
