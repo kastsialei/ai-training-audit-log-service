@@ -1,11 +1,14 @@
 package net.sam.ai.engineering.audit.api.ingestion;
 
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -78,7 +81,14 @@ class IngestionIT {
                 """;
 
         mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", startsWith("https://audit-log-service/problems/")))
+                .andExpect(jsonPath("$.type", endsWith("/validation-error")))
+                .andExpect(jsonPath("$.title", not(equalTo(null))))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.detail", not(equalTo(null))))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
     }
 
     @Test
@@ -94,7 +104,24 @@ class IngestionIT {
                 """;
 
         mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", startsWith("https://audit-log-service/problems/")))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
+    }
+
+    @Test
+    void rejectsMalformedJsonBodyWithProblemJson() throws Exception {
+        String body = "{ this is not valid json";
+
+        mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", startsWith("https://audit-log-service/problems/")))
+                .andExpect(jsonPath("$.type", endsWith("/malformed-request")))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
     }
 
     @Test
