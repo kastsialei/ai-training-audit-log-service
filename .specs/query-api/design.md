@@ -363,9 +363,13 @@ live in `api/shared/`:
    `MethodArgumentNotValidException`,
    `MethodArgumentTypeMismatchException`,
    `MissingServletRequestParameterException`,
-   `HttpMessageNotReadableException`, plus a catch-all to RFC 7807
-   `ProblemDetail`. Replaces Spring's default error body for *every*
-   endpoint, including the existing POST `/audit-events`. The
+   `HttpMessageNotReadableException`, **and the existing domain
+   exception `InvalidAuditEventException` (mapped to `400`)**, plus a
+   safe catch-all to RFC 7807 `ProblemDetail`. Replaces Spring's default
+   error body for *every* endpoint, including the existing POST
+   `/audit-events`; in particular the prior `500` response for
+   bad-input domain validation becomes `400` (per `requirements.md`
+   US-4: bad client input must never surface as `500`). The
    prerequisite slice updates `IngestionIT` accordingly.
 
 2. **Correlation-ID filter.** `OncePerRequestFilter` reading
@@ -436,10 +440,13 @@ as-is.
 - Missing index → full-table scan under load → DB CPU spike.
   Mitigated by the V3 migration shipping in the same PR; the
   integration test in §11 confirms index usage (`EXPLAIN`).
-- Ingestion's 400 response shape changes (Spring default → RFC 7807)
-  in the *prerequisite* slice, not this one. By the time this slice
-  lands, RFC 7807 is already the contract for every endpoint, so this
-  PR introduces no surprise to existing clients.
+- Ingestion's bad-input contract changes in the *prerequisite* slice,
+  not this one: (a) the shape moves from Spring default to RFC 7807,
+  and (b) the status for domain validation failures surfaced as
+  `InvalidAuditEventException` moves from `500` to `400`. By the time
+  this slice lands, both shape and status are already the contract for
+  every endpoint, so this PR introduces no surprise to existing
+  clients.
 
 **Rollout.**
 - Single environment promotion. No feature flag — endpoint is
