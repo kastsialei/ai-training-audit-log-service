@@ -83,6 +83,12 @@ honored in practice without a query surface.
 - **Alternative sort orders.** Single canonical sort `(recorded_at DESC, id DESC)`; no `sort=` parameter.
 - **Schema changes.** No new columns, no actor/resource type split. Response mirrors today's flat schema.
 - **Bulk export / streaming** (NDJSON, file download). Cursor pagination is the only retrieval mode.
+- **Performance / latency SLOs.** No p95/p99 latency targets, throughput numbers, or table-size guarantees are committed for v1. SLOs are an SRE follow-up before pre-prod.
+- **Observability beyond correlation ID.** The only mandated trace surface is the `X-Correlation-Id` echo + MDC binding in US-4. Metrics (histograms, tag schemas), structured request logging, and dashboards are operational follow-ups.
+- **API versioning strategy.** No `/v2/audit-events` path, no `Accept`-header versioning. Future breaking changes will be specified when they are actually needed.
+- **Cursor TTL / expiry.** Cursors do not expire in v1. A future change may add an issued-at field.
+- **5xx response shape.** Only 4xx error contract is specified (RFC 7807 in design). Server errors return the framework default; revisit if 5xx becomes observable in practice.
+- **Unknown query parameter handling.** Behavior follows the framework default; no contract is committed to clients.
 
 ## Open questions
 

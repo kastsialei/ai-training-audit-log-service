@@ -51,7 +51,6 @@ sections.
 | T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | todo |
 | T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | todo |
 | T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | todo |
-| T-12 | Add query observability | T-2, T-9 | US-4, design 7/8 | ~300 | todo |
 
 Status values: `todo`, `in-progress`, `in-review`, `done`, `blocked`.
 
@@ -474,8 +473,9 @@ the public snake_case response envelope.
 
 ### Notes / risks
 
-Unknown query parameters stay ignored per Spring default and design section 2. Do not
-add a `sort` or total-count field.
+Do not add a `sort` or total-count field. Unknown-parameter handling is
+explicitly out of scope (`requirements.md` §Out of scope) — accept the
+framework default without specifying it as a contract.
 
 ---
 
@@ -574,52 +574,6 @@ fix the deterministic fixture control rather than weakening the invariant.
 
 ---
 
-## T-12: Add Query Observability
-
-**Refs:** US-4 (requirements.md), design.md section 7 "Observability", section 8 "Non-functional requirements"
-**Depends on:** T-2, T-9
-**Est. LOC:** ~300
-
-### Goal
-
-Add the read-side logging and metric hooks required for traceable, operable
-queries without logging PII at INFO.
-
-### Scope
-
-- Add per-query INFO logging with method, path, status, latency,
-  `correlationId`, filter fingerprint, limit, page size, and cursor presence.
-- Ensure INFO logs include filter presence/fingerprint but not raw filter
-  values.
-- Add Micrometer histogram/timer `audit_events_query_seconds` tagged by
-  `has_actor`, `has_resource`, `has_event_type`, `has_outcome`,
-  `has_time_window`, and `result_size_bucket`.
-- Keep DEBUG-only raw filter logging optional and disabled by default.
-
-### Out of scope
-
-- Alerts, dashboards, or SLO enforcement.
-- Auth, rate limiting, or max time-window policy.
-- Payload-size limits for large `context`.
-
-### Definition of Done
-
-- [ ] Failing-first test proves the query timer is recorded with the expected
-      metric name and tags.
-- [ ] Test or log-capture assertion proves INFO logs do not include raw
-      `actor`, `resource`, or `event_type` values.
-- [ ] Successful and 400 query responses both retain `X-Correlation-Id`.
-- [ ] Existing ingestion logging behavior is not changed except for MDC
-      correlation from T-2.
-- [ ] Diff under 400 LOC (excluding generated).
-
-### Notes / risks
-
-Keep observability lightweight. Do not add a new dependency unless Spring
-Boot Actuator's existing Micrometer support is insufficient.
-
----
-
 ## Coverage Review
 
 | Requirement / design concern | Covered by |
@@ -631,11 +585,10 @@ Boot Actuator's existing Micrometer support is insufficient.
 | Cursor pagination, filter binding, malformed cursor handling | T-6, T-7, T-9, T-10, T-11 |
 | Limit default and range | T-7, T-9, T-10 |
 | RFC 7807 error shape | T-1, T-10 |
-| Correlation ID response header and MDC | T-2, T-9, T-10, T-12 |
+| Correlation ID response header and MDC | T-2, T-9, T-10 |
 | Shared entity/repository promotion | T-3 |
 | Query indexes and index usage | T-4, T-8 |
-| Observability without PII at INFO | T-12 |
-| Out-of-scope exclusions: auth, search, totals, alternate sorts, export | All tasks list exclusions where relevant |
+| Out-of-scope exclusions: auth, search, totals, alternate sorts, export, NFR SLOs, metrics/logging, versioning, cursor TTL, 5xx shape, unknown-param contract | Honored by omission across tasks |
 
 ## Review
 
@@ -654,5 +607,10 @@ Filled in by the tech lead / architect before implementation starts.
 **Notes:** The first draft risked bundling cross-cutting prerequisites with
 query API work and bundling cursor logic into the use case. The final split
 separates RFC 7807, correlation ID, shared model promotion, cursor codec,
-query policy, database reader, HTTP contract, validation matrix, pagination
-hardening, and observability into independently reviewable commits.
+query policy, database reader, HTTP contract, validation matrix, and
+pagination hardening into independently reviewable commits.
+
+**Revision (2026-05-11):** Observability task (T-12) removed after design
+trim aligned scope with `requirements.md` — metrics, INFO logging schema,
+and NFR SLOs were moved to §Out of scope. Correlation-ID coverage stays
+in T-2, T-9, T-10.

@@ -20,7 +20,7 @@ endpoint with:
 - canonical sort `(recorded_at DESC, id DESC)`,
 - opaque cursor pagination (no offsets, no totals),
 - RFC 7807 errors for everything 4xx,
-- composite indexes on the filter columns to keep p99 latency bounded.
+- composite indexes on the filter columns to keep queries off full scans.
 
 **Deliberately not building** (verbatim from `requirements.md` *Out of
 scope*): authn/authz, full-text search, aggregations, total counts,
@@ -70,9 +70,6 @@ posture; auth is a separate ADR per `requirements.md` §Out of scope).
 ¹ At least **one** of the six substantive filters
 (`actor`, `resource`, `event_type`, `outcome`, `from`, `to`) must be
 provided. `limit` and `cursor` do not satisfy this rule.
-
-Unknown query parameters are **ignored** (Spring's default; documented
-explicitly so future filters don't silently break clients).
 
 ### Request headers
 
@@ -126,12 +123,6 @@ X-Correlation-Id: <id>
 ```
 
 `type` URIs are stable and feature-namespaced; full list in §4.
-
-### Versioning
-
-New endpoint — no compatibility constraint. Future schema additions to
-items are non-breaking only if optional. Breaking changes will be done
-under a new path (`/v2/audit-events`), not via a query parameter.
 
 ### Idempotency
 
@@ -316,8 +307,6 @@ fingerprint bypass breaks cursor's filter-binding guarantee.
 - Cursor pointing to an `id`/`recorded_at` that no longer exists —
   not possible by ADR-0007 (no deletes). If somehow stale, the keyset
   predicate `(recorded_at, id) <` still works correctly.
-- Cursor used after a long delay → no expiry. Acceptable for v1; a
-  future change can add issued-at timestamp.
 
 ### Cursor format (concrete)
 
@@ -360,11 +349,6 @@ upgrading to HMAC if required pre-prod.
 - `from`/`to` may carry any offset; comparison normalizes to UTC.
 - No client-clock dependence on the read path.
 
-### Downstream availability
-
-- Postgres unavailable → request fails-closed with `503` (RFC 7807).
-- No retries on the read path — caller retries.
-
 ## 7. Integration points
 
 ### Prerequisites (separate slice — must land before this one)
@@ -402,34 +386,25 @@ as-is.
 
 ### Observability
 
-- Per-request log line at `INFO` with: method, path, status, latency
-  ms, `correlationId`, filter-fingerprint, `limit`, `pageSize`, and
-  whether `cursor` was supplied. **Filter values are not logged at
-  `INFO`** to avoid PII leakage (e.g., `actor` may be a user id);
-  only the fingerprint and which filters were present.
-- At `DEBUG` (off in prod), filter values may be logged.
-- Metric: `audit_events_query_seconds` histogram tagged by
-  `has_actor`, `has_resource`, `has_event_type`, `has_outcome`,
-  `has_time_window`, `result_size_bucket`. Built on Micrometer (added
-  by this slice — no metric infra exists today).
+- `X-Correlation-Id` echo and MDC binding (US-4) are inherited from
+  the prerequisite filter (see "Prerequisites" above). No additional
+  read-side logging or metrics are specified — per
+  `requirements.md` §Out of scope, observability beyond correlation
+  ID is an operational follow-up.
 
 ## 8. Non-functional requirements
 
-- **Latency target.** p95 < 200 ms for queries hitting an index on
-  tables up to 50M rows. p99 < 500 ms. (No SLO doc exists; targets
-  are starting points to be confirmed in §12.)
-- **Throughput.** Read endpoint expected to handle ≤50 RPS in v1.
 - **Security.**
   - No authn/authz in v1 (inherits ingestion).
-  - Filter values may contain PII; logged only at `DEBUG`.
   - Cursor not signed; threat model: caller tampering with their own
     cursor harms only themselves (see §6 "Cursor failure modes").
   - Error bodies must not echo internal cursor structure or stack
     traces.
 - **Compliance.** None additional in v1. Auth ADR is the gate to
   production rollout (`requirements.md` §Out of scope).
-- **Operability.** Single Postgres dependency; no new alerts beyond
-  the existing DB liveness check. Runbook update lives with the PR.
+- **Latency / throughput / operability.** No SLOs in v1 per
+  `requirements.md` §Out of scope. Targets, alerts, and runbook
+  belong to a pre-prod SRE pass.
 
 ## 9. Alternatives considered
 
