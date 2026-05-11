@@ -12,6 +12,8 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
 |---|------------------------------------------------------------|
 | Full conventions | [ARCHITECTURE.md](ARCHITECTURE.md)                         |
 | Product glossary | [product.md](product.md)                                   |
+| Spec workflow (new features) | [.specs/WORKFLOW.md](.specs/WORKFLOW.md)   |
+| Spec templates | [.templates/](.templates/)                                 |
 | Run locally | `docker compose -f deploy/docker-compose.yml up -d`        |
 | Format code | `mvn spotless:apply`                                       |
 | CI pipeline | [.github/workflows/build.yml](.github/workflows/build.yml) |
@@ -49,3 +51,22 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
   starts. Plans cite the glossary; the glossary wins on conflict.
 
 For full naming conventions, cross-cutting concerns, and repo map → [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## New feature? Write a spec first
+
+For any **new endpoint, subsystem, or contract/schema change**, follow
+the spec workflow before writing code: draft `requirements.md` →
+`design.md` → `tasks.md` under `.specs/<feature>/`, starting from
+[`.templates/`](.templates/). Skip for bug fixes, refactors, and trivial
+edits.
+
+- **The spec is the source of truth.** Fix gaps in the spec first, code
+  second. Out-of-scope work goes back to requirements/design — never
+  silently expand a task.
+- **Don't hallucinate.** When uncertain, ask. Unresolved items live in
+  `requirements.md` → *Open questions* until answered.
+- **Acceptance criteria use EARS** (Given/When/Then is acceptable).
+- **List endpoints use a deterministic sort with a unique tiebreaker**
+  (e.g. `(recorded_at DESC, id DESC)`).
+
+Full rules, EARS shapes, and project invariants → [.specs/WORKFLOW.md](.specs/WORKFLOW.md).

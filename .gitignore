@@ -41,3 +41,7 @@ Thumbs.db
 
 ### Spotless ###
 .spotless/
+
+.mcp.json
+.claude/ht-principles
+.claude/rules/ht-testing.md
