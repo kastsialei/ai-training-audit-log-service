@@ -72,6 +72,7 @@ honored in practice without a query surface.
 - [ ] Given **none** of the six substantive filters (`actor`, `resource`, `event_type`, `outcome`, `from`, `to`) is provided — `limit` and `cursor` do not count — then the request is rejected with `400 application/problem+json` and a `detail` stating at least one filter is required.
 - [ ] Given any of: invalid ISO-8601 timestamp, unknown `outcome`, blank filter value, `from > to`, `limit` out of range, malformed `cursor` — when I call the endpoint, then the response is `400 application/problem+json` with a specific `detail` for the violation.
 - [ ] Given any error response, then the body conforms to RFC 7807 (`type`, `title`, `status`, `detail`, `instance`) and is shape-consistent with ingestion error responses.
+- [ ] Given an invalid payload to `POST /audit-events` that fails domain validation (e.g., blank `actor`, null `context`) and today surfaces as `500`, then once the cross-cutting RFC 7807 infrastructure is in place the response is `400 application/problem+json` with the same RFC 7807 fields used by the query endpoint. Bad client input must never surface as `500`.
 - [ ] Given any request with or without an `X-Correlation-Id` header, then the response includes the same correlation id (echoed if supplied; generated UUID otherwise) and the id is bound to MDC for the request lifetime, per ARCHITECTURE.md.
 
 ## Out of scope

@@ -5,6 +5,7 @@
 
 - Requirements: [./requirements.md](./requirements.md)
 - Design: [./design.md](./design.md)
+- Glossary (shared contracts, naming, ProblemKind enums): [./glossary.md](./glossary.md)
 
 ## Ground rules
 
@@ -38,24 +39,44 @@ These apply to **every** task in this file.
 Quick map for sequencing and parallelism. Keep in sync with the per-task
 sections.
 
-| ID | Title | Depends on | Refs | Est. LOC | Status |
-|---|---|---|---|---|---|
-| T-1 | Add global RFC 7807 advice | -- | US-4, design 2/7 | ~300 | todo |
-| T-2 | Add correlation-ID filter | -- | US-4, design 2/7 | ~220 | todo |
-| T-3 | Promote shared audit event persistence types | -- | US-1, design 3 | ~180 | todo |
-| T-4 | Add query indexes migration | -- | US-1/US-2/US-3, design 3 | ~140 | todo |
-| T-5 | Model query filters and validation policy | T-3 | US-1/US-2/US-4, design 4/6 | ~260 | todo |
-| T-6 | Implement cursor codec and filter fingerprint | T-5 | US-3, design 5/6 | ~280 | todo |
-| T-7 | Implement query use case and reader port | T-5, T-6 | US-1/US-3/US-4, design 4/5 | ~330 | todo |
-| T-8 | Implement database query reader | T-3, T-4, T-7 | US-1/US-2, design 3/5 | ~360 | todo |
-| T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | todo |
-| T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | todo |
-| T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | todo |
+| ID | Title | Depends on | Refs | Est. LOC | Plan | Status |
+|---|---|---|---|---|---|---|
+| T-1 | Add global RFC 7807 advice | -- | US-4, design 2/7 | ~300 | [T-1.md](plans/T-1.md) | todo |
+| T-2 | Add correlation-ID filter | -- | US-4, design 2/7 | ~220 | [T-2.md](plans/T-2.md) | todo |
+| T-3 | Promote shared audit event persistence types | -- | US-1, design 3 | ~180 | [T-3.md](plans/T-3.md) | todo |
+| T-4 | Add query indexes migration | -- | US-1/US-2/US-3, design 3 | ~140 | [T-4.md](plans/T-4.md) | todo |
+| T-5 | Model query filters and validation policy | T-3 | US-1/US-2/US-4, design 4/6 | ~260 | [T-5.md](plans/T-5.md) | todo |
+| T-6 | Implement cursor codec and filter fingerprint | T-5 | US-3, design 5/6 | ~280 | [T-6.md](plans/T-6.md) | todo |
+| T-7 | Implement query use case and reader port | T-5, T-6 | US-1/US-3/US-4, design 4/5 | ~330 | [T-7.md](plans/T-7.md) | todo |
+| T-8 | Implement database query reader | T-3, T-4, T-7 | US-1/US-2, design 3/5 | ~360 | [T-8.md](plans/T-8.md) | todo |
+| T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | [T-9.md](plans/T-9.md) | todo |
+| T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | [T-10.md](plans/T-10.md) | todo |
+| T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | [T-11.md](plans/T-11.md) | todo |
 
 Status values: `todo`, `in-progress`, `in-review`, `done`, `blocked`.
 
 Parallel starts: T-1, T-2, T-3, and T-4 can be developed independently.
 Feature implementation starts at T-5 after the shared type promotion lands.
+
+### Implementation progress checklist
+
+Each task ticks off the same milestones in order. Use this to spot
+half-finished work at a glance. Flip the matching `Status` column above
+when a row reaches `Tests green`.
+
+| ID | Plan written | Plan approved | Failing test | Implementation | Tests green | LOC ≤ 400 | Code review | Merged |
+|---|---|---|---|---|---|---|---|---|
+| T-1 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-2 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-3 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-4 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-5 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-6 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-7 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-8 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-9 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-10 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| T-11 | [x] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ---
 
@@ -79,6 +100,9 @@ shape that the query endpoint will later use.
   `MethodArgumentNotValidException`, `MethodArgumentTypeMismatchException`,
   `MissingServletRequestParameterException`, `HttpMessageNotReadableException`,
   plus a safe catch-all.
+- Map the existing domain exception `InvalidAuditEventException` to
+  `400 application/problem+json` (currently surfaces as `500`), per
+  US-4 and design section 7.
 - Preserve existing ingestion success behavior and update ingestion error
   assertions to the new problem shape.
 
@@ -92,6 +116,9 @@ shape that the query endpoint will later use.
 
 - [ ] Failing-first integration coverage proves invalid `POST /audit-events`
       returns `400 application/problem+json`.
+- [ ] Failing-first integration coverage proves a `POST /audit-events`
+      payload that triggers `InvalidAuditEventException` returns
+      `400 application/problem+json` (was `500`).
 - [ ] Error body contains RFC 7807 fields: `type`, `title`, `status`,
       `detail`, `instance`.
 - [ ] Existing successful ingestion integration tests still pass unchanged in
@@ -104,8 +131,10 @@ shape that the query endpoint will later use.
 ### Notes / risks
 
 This task intentionally changes the existing ingestion error contract before
-the read endpoint exists, matching design section 7. Keep problem `type` URIs stable
-under `https://audit-log-service/problems/`.
+the read endpoint exists, matching design section 7. That change is twofold:
+(a) error body shape moves from Spring default to RFC 7807, and (b) bad-input
+domain validation (`InvalidAuditEventException`) moves from `500` to `400`.
+Keep problem `type` URIs stable under `https://audit-log-service/problems/`.
 
 ---
 
@@ -614,3 +643,14 @@ pagination hardening into independently reviewable commits.
 trim aligned scope with `requirements.md` — metrics, INFO logging schema,
 and NFR SLOs were moved to §Out of scope. Correlation-ID coverage stays
 in T-2, T-9, T-10.
+
+**Revision (2026-05-11, planning pass):** Per-task implementation plans
+written under `plans/T-1.md` … `plans/T-11.md`. Each plan covers Goal,
+Approach, Files, test-first Step-by-step, DoD trace, Risks, Review, and
+Integration & handoff sections. Team-lead consolidated review verdict:
+approve T-3, T-4, T-11 as written; approve T-5, T-6, T-7, T-8, T-9, T-10
+with a small reconciliation pass before implementation (see
+`plans/` review notes — exception-API contract lock, `QueryCriteria`
+vs `RequestedLimit` ownership, T-9 request-object vs T-10 DTO validators).
+Progress checklist table above tracks each task through plan-approval
+to merged.

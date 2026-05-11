@@ -39,5 +39,13 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
 - **Schema via migrations.** Never edit applied migrations.
 - **UTC everywhere.** Server is source of truth for timestamps.
 - **No silent failures.** Ingestion failures must be logged and observable.
+- **Error contract.** All HTTP errors (4xx and 5xx) return RFC 7807
+  `ProblemDetail` with `Content-Type: application/problem+json` and the
+  fields `type`, `title`, `status`, `detail`, `instance`. Bad client
+  input is 4xx, never 5xx. Every response carries `X-Correlation-Id`.
+- **Cross-task contracts.** When a feature spans more than two tasks,
+  pin the shared types, ports, packages, and exception structure in
+  `.specs/<feature>/glossary.md` before per-task implementation
+  starts. Plans cite the glossary; the glossary wins on conflict.
 
 For full naming conventions, cross-cutting concerns, and repo map → [ARCHITECTURE.md](ARCHITECTURE.md).
