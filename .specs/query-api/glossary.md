@@ -74,9 +74,17 @@ constructor. They **never** include user-supplied input.
 public final class InvalidQueryException extends RuntimeException {
     public enum ProblemKind { NO_FILTER, BLANK_FILTER, INVALID_TIME_RANGE }
     public ProblemKind kind();
-    public Optional<String> field();   // present for BLANK_FILTER
+    public Optional<String> field();   // present for BLANK_FILTER; holds the DTO component name (e.g. "actor")
 }
 ```
+
+For `BLANK_FILTER`: `field()` returns the DTO component name (e.g.,
+`"actor"`). The `detail` message is a static template keyed by kind —
+e.g., `"actor must not be blank"` — where the field name comes from
+the **code** (the DTO component name), not from the user's supplied
+*value*. This does not violate the "messages are static, never include
+user-supplied input" rule: the field *name* is a code constant; the
+field *value* is never interpolated.
 
 ### `InvalidCursorException` (T-6, `application.query`)
 
@@ -114,7 +122,9 @@ All under `https://audit-log-service/problems/`. Constants live in
 
 `INVALID_LIMIT` is **not** on `InvalidQueryException.ProblemKind` —
 limit-range violations come through `MethodArgumentNotValidException`
-and are routed to `invalid-limit` by the handler's field-name switch.
+and are routed to `invalid-limit` by the handler's field-name switch
+keyed on the DTO component name `limit`. A unit test in T-10 pins
+this component name so a rename is caught immediately.
 
 ## 6. HTTP request and response
 
@@ -141,11 +151,14 @@ public record QueryAuditEventsRequest(
 
 Snake_case URL parameter binding: a `Converter<String, String>` or
 field-level `@JsonAlias`/`@Name` is **not** sufficient for query
-params. Use Spring's `@ConstructorBinding` with parameter renaming
-via `@RequestParam`-style aliasing on the record component, or set
-`spring.mvc.parameter-resolver-disabled=false` plus a property
-naming strategy. T-9 picks the simplest working mechanism and
-documents it.
+params. **Pinned mechanism:** use `@ModelAttribute` with an explicit
+`@RequestParam(name = "event_type")` annotation on the `eventType`
+record component (and any other snake_case → camelCase mappings). This
+is the most explicit, test-verifiable approach: the annotation is the
+contract; an integration test asserts that `?event_type=doc.read`
+binds correctly. `spring.mvc.parameter-resolver-disabled` flags and
+naming-strategy properties are project-wide side effects and are
+rejected. T-9 implements and documents this mechanism.
 
 ### 6.2 Response envelope
 

@@ -135,6 +135,10 @@ the read endpoint exists, matching design section 7. That change is twofold:
 (a) error body shape moves from Spring default to RFC 7807, and (b) bad-input
 domain validation (`InvalidAuditEventException`) moves from `500` to `400`.
 Keep problem `type` URIs stable under `https://audit-log-service/problems/`.
+Per `requirements.md → Out of scope (5xx response shape)`, the catch-all
+advice also wraps unhandled exceptions in `ProblemDetail`, but the `type`
+URI and `detail` for 5xx are not feature-namespaced and not stable API —
+do not pin them with assertions beyond "no stack-trace leakage".
 
 ---
 
@@ -471,7 +475,10 @@ the public snake_case response envelope.
 
 - Add `api/query/` controller and DTO records for `GET /audit-events`.
 - Bind query parameters: `actor`, `resource`, `event_type`, `outcome`,
-  `from`, `to`, `limit`, and `cursor`.
+  `from`, `to`, `limit`, and `cursor`. Use the mechanism pinned in
+  `glossary.md → §6.1`: `@ModelAttribute` on the request record with an
+  explicit `@RequestParam(name = "event_type")` on the `eventType`
+  component (and any other snake_case → camelCase mappings).
 - Default `limit` to 50 and cap successful response page size to the
   requested limit.
 - Serialize response as `{ "items": [...], "next_cursor": "..."|null }`.
@@ -488,6 +495,9 @@ the public snake_case response envelope.
 
 - [ ] Failing-first MockMvc/Testcontainers test proves a filtered
       `GET /audit-events` returns `200 application/json`.
+- [ ] Integration test proves `?event_type=...` binds to the
+      `eventType` record component via the pinned `@ModelAttribute` +
+      `@RequestParam(name = "event_type")` mechanism.
 - [ ] Integration tests assert snake_case envelope and item fields.
 - [ ] Integration tests cover empty result set with `items: []` and
       `next_cursor: null`.
@@ -544,7 +554,15 @@ safe details.
       filters.
 - [ ] Integration tests cover invalid `outcome`, invalid timestamp,
       timestamp without offset, `from > to`, `limit < 1`, and `limit > 200`.
-- [ ] Integration tests cover malformed cursor and cursor/filter mismatch.
+- [ ] Integration tests cover malformed/structurally-invalid cursor and
+      assert `type` = `invalid-cursor`; separate test covers
+      cursor/filter fingerprint mismatch and asserts `type` =
+      `cursor-filter-mismatch`. Per `requirements.md → US-3`, the two
+      cursor failure modes have distinct stable `type` URIs.
+- [ ] Unit test pins the DTO component name `limit` (the field-name key
+      the advice handler uses to route `INVALID_LIMIT`). Renaming the
+      component without updating the switch must fail this test. Per
+      `design.md → §4` and `glossary.md → §5`.
 - [ ] Every 400 response has `application/problem+json`, RFC 7807 fields, and
       `X-Correlation-Id`.
 - [ ] Cursor error `detail` values do not echo the supplied cursor or decoded
@@ -573,7 +591,10 @@ after the endpoint contract is complete.
 
 - Add a multi-page HTTP pagination walk test with `limit=2` over at least
   three pages.
-- Add a concurrent insert during walk test: page 1, insert newer event, page 2.
+- Add a concurrent insert during walk test: page 1, insert event with a
+  strictly *newer* `recorded_at`, page 2. Same-`recorded_at` concurrent
+  inserts are unreachable in production (server stamps `now()`) and are
+  covered by test commentary only, per `design.md → §11`.
 - Add randomized/property-style pagination invariant coverage comparing a
   cursor walk with the same filtered result set read as one ordered list.
 - Cover `from == to` as an empty half-open window.

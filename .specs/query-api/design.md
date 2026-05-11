@@ -218,6 +218,11 @@ violation maps to a stable `type` URI under
 | `cursor` parseable + structurally valid | use case | `…/invalid-cursor` | "cursor is malformed" — no internals |
 | `cursor.fingerprint` matches current filter set | use case | `…/cursor-filter-mismatch` | "cursor was issued for a different filter set" |
 
+`INVALID_LIMIT` is routed by a field-name switch in the advice
+handler keyed on the DTO component name `limit`. This switch is
+brittle if the field is renamed; a dedicated unit test in T-10 pins
+the component name and will catch regressions.
+
 **Normalization.** None — filters are matched byte-exact. `from`/`to`
 are converted to UTC `OffsetDateTime` after parsing (offsets honored on
 input, persisted comparisons in UTC).
@@ -246,13 +251,17 @@ The contract callers can rely on:
 
 2. **Page-stability under newer-timestamp ingestion.** Walking
    `cursor`-by-`cursor` from a first page never duplicates an event
-   and never skips one *that existed at or before the cursor's
-   `recorded_at`*. Enforced by the strict-less-than keyset predicate
-   `(recorded_at, id) < (cursor.rt, cursor.id)`. Reason this works:
-   ingestion only writes events with `recorded_at = now()`, so newly
-   inserted rows are always greater than any cursor — they cannot
-   appear on later pages of an in-progress walk; they only appear on
-   subsequent fresh queries.
+   and never skips one with `recorded_at <= cursor.rt`. Two predicates
+   are applied in order: (a) the `from`-inclusive / `to`-exclusive
+   filter from `QueryCriteria` is applied first; (b) the
+   strict-less-than keyset `(recorded_at, id) < (cursor.rt, cursor.id)`
+   is applied on top to advance within that window. The keyset never
+   violates the `from`-inclusive boundary: page 1 honors `from`
+   inclusively; subsequent pages see the same bound via `QueryCriteria`
+   plus the keyset advancing from the prior tail. Backdated writes are
+   not a supported ingestion mode (server-stamp `now()` only), so no
+   event with an earlier `recorded_at` can appear after a cursor is
+   issued — `cursor.rt` fully captures the visible frontier.
 
 3. **Cursor binds to its filter set.** A `cursor` issued for filter
    set F is rejected if replayed against filter set F'≠F.
@@ -290,6 +299,11 @@ fingerprint bypass breaks cursor's filter-binding guarantee.
 - Either bound missing → window unbounded on that side.
 - `from` or `to` without offset (`2026-05-01T00:00:00`) → 400 (offset
   is mandatory to avoid silent timezone bugs).
+- Accepted offset forms: `...Z`, `...+00:00`, `...+05:30` — any
+  valid ISO-8601 UTC offset. Spring's `OffsetDateTime` binder treats
+  `Z` as equivalent to `+00:00`; both are accepted. The only rejection
+  on format is a string that parses as a local-date-time (no offset at
+  all) or is not a valid ISO-8601 instant.
 
 ### Concurrent ingestion
 
@@ -343,6 +357,12 @@ upgrading to HMAC if required pre-prod.
   it'll fail with 500 `internal-error`. Acceptable for v1; tracked
   in §12 for a max-size guard.
 
+General contract: server-side failures (serialization errors,
+infrastructure faults) may surface as 5xx; *bad client input* is
+always 4xx (never 5xx). The oversize-context 5xx is server-side —
+the caller cannot trigger it by submitting a "wrong" request — and
+therefore does not violate `requirements.md → US-4 AC #4`.
+
 ### Time / clock concerns
 
 - Server reads UTC `TIMESTAMPTZ`; Java side is `OffsetDateTime`.
@@ -377,6 +397,11 @@ live in `api/shared/`:
    `MDC.put("correlationId", …)` and adding `X-Correlation-Id` to the
    response. `MDC.remove` in `finally`. Active for both ingest and
    query.
+
+Both prerequisite items are specified in this feature's task
+breakdown: `tasks.md → T-1` (global RFC 7807 advice) and `tasks.md →
+T-2` (correlation-ID filter). They ship as separate PRs that must be
+merged and green before this slice's implementation starts.
 
 **This slice extends** the advice with two query-specific exception
 types it owns: `InvalidQueryException` and `InvalidCursorException`,
@@ -427,6 +452,12 @@ as-is.
 - **Pushing the "≥1 filter" rule into the DTO** — rejected because
   `limit` and `cursor` don't count; keeping the rule in the use case
   preserves DTO-as-shape and use-case-as-policy.
+- **Drop `RequestedLimit` wrapper, pass `int limit` directly** —
+  rejected. A named typed slot makes the three-parameter use-case
+  signature (`QueryCriteria`, `RequestedLimit`, `Optional<String>
+  cursor`) self-documenting and avoids a positional `int`/`int`
+  ambiguity if a second integer is ever added. The wrapper carries no
+  logic; its sole purpose is naming. Kept.
 - **Cross-feature import (skip the `shared/` promotion)** — rejected.
   ADR-0003's promotion rule fires now that two features depend on
   `AuditEvent`; bypassing it leaves a quiet violation.
@@ -483,8 +514,14 @@ Each acceptance criterion in `requirements.md` maps to ≥1 test below.
   serialization, sort order.
 - **Pagination walk**: ≥3 pages with `limit=2`; assert no
   duplicates, no skips, last page has `next_cursor: null`.
-- **Concurrent insert during walk**: page 1 → insert newer event →
-  page 2; new event must not appear on the walk.
+- **Concurrent insert during walk**: page 1 → insert event with a
+  strictly *newer* `recorded_at` → page 2; new event must not appear
+  on the walk. Same-`recorded_at` inserts are handled by the `id DESC`
+  tiebreaker: any same-instant row with a greater `id` is excluded by
+  the keyset predicate `(recorded_at, id) < (cursor.rt, cursor.id)`.
+  This sub-case is documented in test commentary rather than a
+  dedicated test, because the append-only `now()` stamp makes
+  same-`recorded_at` concurrent inserts unreachable in production.
 - **Filter combinations**: each pair of substantive filters → assert
   AND semantics.
 - **`from == to`** → empty `items`, `next_cursor: null`.
