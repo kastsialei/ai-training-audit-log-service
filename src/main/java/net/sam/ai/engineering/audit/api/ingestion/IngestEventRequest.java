@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import net.sam.ai.engineering.audit.domain.ingestion.Outcome;
+import net.sam.ai.engineering.audit.domain.shared.Outcome;
 
 public record IngestEventRequest(
         @NotBlank String actor,

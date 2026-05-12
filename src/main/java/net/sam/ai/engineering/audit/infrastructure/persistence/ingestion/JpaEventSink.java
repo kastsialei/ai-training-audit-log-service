@@ -1,7 +1,8 @@
 package net.sam.ai.engineering.audit.infrastructure.persistence.ingestion;
 
 import net.sam.ai.engineering.audit.application.ingestion.EventSink;
-import net.sam.ai.engineering.audit.domain.ingestion.AuditEvent;
+import net.sam.ai.engineering.audit.domain.shared.AuditEvent;
+import net.sam.ai.engineering.audit.infrastructure.persistence.shared.AuditEventRepository;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -1,4 +1,4 @@
-package net.sam.ai.engineering.audit.domain.ingestion;
+package net.sam.ai.engineering.audit.domain.shared;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
@@ -13,6 +13,7 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
+import net.sam.ai.engineering.audit.domain.ingestion.InvalidAuditEventException;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
