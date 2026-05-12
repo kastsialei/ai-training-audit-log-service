@@ -51,7 +51,7 @@ sections.
 | T-8 | Implement database query reader | T-3, T-4, T-7 | US-1/US-2, design 3/5 | ~360 | [T-8.md](plans/T-8.md) | done |
 | T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | [T-9.md](plans/T-9.md) | done |
 | T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | [T-10.md](plans/T-10.md) | done |
-| T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | [T-11.md](plans/T-11.md) | todo |
+| T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | [T-11.md](plans/T-11.md) | done |
 
 Status values: `todo`, `in-progress`, `in-review`, `done`, `blocked`.
 
