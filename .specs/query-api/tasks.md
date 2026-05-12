@@ -41,16 +41,16 @@ sections.
 
 | ID | Title | Depends on | Refs | Est. LOC | Plan | Status |
 |---|---|---|---|---|---|---|
-| T-1 | Add global RFC 7807 advice | -- | US-4, design 2/7 | ~300 | [T-1.md](plans/T-1.md) | todo |
-| T-2 | Add correlation-ID filter | -- | US-4, design 2/7 | ~220 | [T-2.md](plans/T-2.md) | todo |
-| T-3 | Promote shared audit event persistence types | -- | US-1, design 3 | ~180 | [T-3.md](plans/T-3.md) | todo |
-| T-4 | Add query indexes migration | -- | US-1/US-2/US-3, design 3 | ~140 | [T-4.md](plans/T-4.md) | todo |
-| T-5 | Model query filters and validation policy | T-3 | US-1/US-2/US-4, design 4/6 | ~260 | [T-5.md](plans/T-5.md) | todo |
-| T-6 | Implement cursor codec and filter fingerprint | T-5 | US-3, design 5/6 | ~280 | [T-6.md](plans/T-6.md) | todo |
-| T-7 | Implement query use case and reader port | T-5, T-6 | US-1/US-3/US-4, design 4/5 | ~330 | [T-7.md](plans/T-7.md) | todo |
-| T-8 | Implement database query reader | T-3, T-4, T-7 | US-1/US-2, design 3/5 | ~360 | [T-8.md](plans/T-8.md) | todo |
-| T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | [T-9.md](plans/T-9.md) | todo |
-| T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | [T-10.md](plans/T-10.md) | todo |
+| T-1 | Add global RFC 7807 advice | -- | US-4, design 2/7 | ~300 | [T-1.md](plans/T-1.md) | done |
+| T-2 | Add correlation-ID filter | -- | US-4, design 2/7 | ~220 | [T-2.md](plans/T-2.md) | done |
+| T-3 | Promote shared audit event persistence types | -- | US-1, design 3 | ~180 | [T-3.md](plans/T-3.md) | done |
+| T-4 | Add query indexes migration | -- | US-1/US-2/US-3, design 3 | ~140 | [T-4.md](plans/T-4.md) | done |
+| T-5 | Model query filters and validation policy | T-3 | US-1/US-2/US-4, design 4/6 | ~260 | [T-5.md](plans/T-5.md) | done |
+| T-6 | Implement cursor codec and filter fingerprint | T-5 | US-3, design 5/6 | ~280 | [T-6.md](plans/T-6.md) | done |
+| T-7 | Implement query use case and reader port | T-5, T-6 | US-1/US-3/US-4, design 4/5 | ~330 | [T-7.md](plans/T-7.md) | done |
+| T-8 | Implement database query reader | T-3, T-4, T-7 | US-1/US-2, design 3/5 | ~360 | [T-8.md](plans/T-8.md) | done |
+| T-9 | Expose GET /audit-events success path | T-1, T-2, T-7, T-8 | US-1/US-2/US-3, design 2 | ~380 | [T-9.md](plans/T-9.md) | done |
+| T-10 | Complete query validation error contract | T-1, T-6, T-9 | US-3/US-4, design 4/6/7 | ~340 | [T-10.md](plans/T-10.md) | done |
 | T-11 | Harden pagination and concurrent-read tests | T-8, T-9, T-10 | US-2/US-3, design 5/11 | ~330 | [T-11.md](plans/T-11.md) | todo |
 
 Status values: `todo`, `in-progress`, `in-review`, `done`, `blocked`.
