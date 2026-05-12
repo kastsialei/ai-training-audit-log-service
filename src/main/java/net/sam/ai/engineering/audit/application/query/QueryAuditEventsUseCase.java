@@ -3,7 +3,9 @@ package net.sam.ai.engineering.audit.application.query;
 import java.util.List;
 import java.util.Optional;
 import net.sam.ai.engineering.audit.domain.shared.AuditEvent;
+import org.springframework.stereotype.Service;
 
+@Service
 public class QueryAuditEventsUseCase {
 
     private final EventReader reader;
