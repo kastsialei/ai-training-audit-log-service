@@ -1,3 +1,8 @@
+---
+name: requirements-template
+description: Skeleton for .specs/<feature>/requirements.md — problem, user stories, EARS acceptance criteria, out-of-scope, open questions. Copy and fill before drafting design.
+---
+
 # Requirements: <feature name>
 
 ## Problem

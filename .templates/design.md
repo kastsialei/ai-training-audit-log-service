@@ -1,3 +1,8 @@
+---
+name: design-template
+description: Skeleton for .specs/<feature>/design.md — framing, public surface, data, validation, invariants, edge cases, integration, risks, test strategy. Fill after requirements is locked.
+---
+
 # Design: <feature name>
 
 > Filled in after `requirements.md` is locked and clarifications resolved.

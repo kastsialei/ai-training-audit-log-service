@@ -1,3 +1,8 @@
+---
+name: tasks-template
+description: Skeleton for .specs/<feature>/tasks.md — ground rules, task-overview table, per-task sections (goal, scope, DoD, dependencies), and tech-lead review block. Fill after design is locked.
+---
+
 # Tasks: <feature name>
 
 > Filled in after `design.md` is locked. Tasks turn the design into a sequence

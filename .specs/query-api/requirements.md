@@ -58,7 +58,7 @@ honored in practice without a query surface.
 - [ ] Given a `next_cursor` from a prior response, when I pass it as `cursor=...`, then I receive the next contiguous page — no duplicates and no skipped events relative to the prior page (under append-only ingestion at newer timestamps).
 - [ ] Given the last page, when I read it, then `next_cursor` is `null`.
 - [ ] Given no `limit`, the default is `50`. Given `limit < 1` or `limit > 200`, then the request is rejected with `400 application/problem+json`.
-- [ ] Given a malformed, tampered, or otherwise unparseable `cursor`, then the request is rejected with `400 application/problem+json` and the body does not leak cursor internals.
+- [ ] Given a malformed, tampered, or otherwise unparseable `cursor`, then the request is rejected with `400 application/problem+json` with `type` either `invalid-cursor` (structurally unparseable or missing fields) or `cursor-filter-mismatch` (structurally valid but fingerprint mismatch against current filters), and the body does not leak cursor internals.
 - [ ] Given a `cursor` issued for one filter set, when I replay it with a different filter set, then the request is rejected with `400 application/problem+json` whose `detail` says the cursor does not match the supplied filters.
 
 ### US-4: Caller gets actionable validation errors
@@ -72,10 +72,13 @@ honored in practice without a query surface.
 - [ ] Given **none** of the six substantive filters (`actor`, `resource`, `event_type`, `outcome`, `from`, `to`) is provided — `limit` and `cursor` do not count — then the request is rejected with `400 application/problem+json` and a `detail` stating at least one filter is required.
 - [ ] Given any of: invalid ISO-8601 timestamp, unknown `outcome`, blank filter value, `from > to`, `limit` out of range, malformed `cursor` — when I call the endpoint, then the response is `400 application/problem+json` with a specific `detail` for the violation.
 - [ ] Given any error response, then the body conforms to RFC 7807 (`type`, `title`, `status`, `detail`, `instance`) and is shape-consistent with ingestion error responses.
-- [ ] Given an invalid payload to `POST /audit-events` that fails domain validation (e.g., blank `actor`, null `context`) and today surfaces as `500`, then once the cross-cutting RFC 7807 infrastructure is in place the response is `400 application/problem+json` with the same RFC 7807 fields used by the query endpoint. Bad client input must never surface as `500`.
+- [ ] Given an invalid payload to `POST /audit-events` that fails domain validation (e.g., blank `actor`, null `context`) and today surfaces as `500`, then once the cross-cutting RFC 7807 prerequisite slice (`T-1`) is in place the response is `400 application/problem+json`. Bad client input must never surface as `500`.
+- [ ] Given the RFC 7807 prerequisite slice is in place, then error responses from `POST /audit-events` use the same `type`, `title`, `status`, `detail`, `instance` shape as `GET /audit-events` errors, so that the error contract is consistent across all endpoints.
 - [ ] Given any request with or without an `X-Correlation-Id` header, then the response includes the same correlation id (echoed if supplied; generated UUID otherwise) and the id is bound to MDC for the request lifetime, per ARCHITECTURE.md.
 
 ## Out of scope
+
+> Scope changes over time are tracked in [`./_delta.md`](./_delta.md).
 
 - **AuthN / AuthZ.** Endpoint inherits ingestion's current unauthenticated posture. A separate ADR will introduce auth (likely tenant-scoped + role-based) before production rollout.
 - **Full-text search, wildcards, prefix matching.** Exact match only — `product.md` non-goals already exclude search-engine semantics.
@@ -88,7 +91,7 @@ honored in practice without a query surface.
 - **Observability beyond correlation ID.** The only mandated trace surface is the `X-Correlation-Id` echo + MDC binding in US-4. Metrics (histograms, tag schemas), structured request logging, and dashboards are operational follow-ups.
 - **API versioning strategy.** No `/v2/audit-events` path, no `Accept`-header versioning. Future breaking changes will be specified when they are actually needed.
 - **Cursor TTL / expiry.** Cursors do not expire in v1. A future change may add an issued-at field.
-- **5xx response shape.** Only 4xx error contract is specified (RFC 7807 in design). Server errors return the framework default; revisit if 5xx becomes observable in practice.
+- **5xx response shape.** The 4xx error contract is fully specified (RFC 7807 in design). In practice, the prerequisite slice (`T-1`) ships a catch-all `@RestControllerAdvice` that also wraps unhandled exceptions in RFC 7807 `ProblemDetail`, so 5xx responses will use the same envelope shape — but the specific `type` URI and `detail` for 5xx are not feature-namespaced and not stable API. Bad client input is always 4xx; server-side failures (infrastructure faults, serialization errors) may be 5xx.
 - **Unknown query parameter handling.** Behavior follows the framework default; no contract is committed to clients.
 
 ## Open questions
@@ -96,4 +99,4 @@ honored in practice without a query surface.
 - [ ] Which DB indexes back the filterable columns to avoid full-table scans? — owner: implementer; needed by: before merge. Candidates: `(recorded_at DESC, id DESC)` always; partial / composite on `(actor, recorded_at DESC)` and `(resource, recorded_at DESC)`. Resolved in `design.md`.
 - [ ] Multi-value `outcome` filter (e.g., `outcome=DENIED,ERROR`) for security investigators? — owner: product; needed by: post-MVP. Default for v1: single value.
 - [ ] Maximum time-window size and rate limiting to bound expensive scans? — owner: SRE; needed by: pre-prod hardening.
-- [ ] Cursor signing / integrity (HMAC vs unsigned opaque blob)? — owner: implementer; needed by: design phase. Affects how "tampered cursor" is detected.
+- [x] Cursor signing / integrity (HMAC vs unsigned opaque blob)? — Resolved in `design.md → §6 "Cursor format"`: unsigned + SHA-256 fingerprint over canonicalized filters. Security review may upgrade to HMAC before pre-prod; tracked in `design.md → §12` under owner: security review.

@@ -1,3 +1,9 @@
+---
+name: spec-workflow
+description: Authoring workflow for new feature specs under .specs/<feature>/ — phases, EARS-style acceptance criteria, ask-don't-hallucinate rule, and project invariants every spec must reflect.
+applies-to: ".specs/**/{requirements,design,tasks}.md"
+---
+
 # Spec workflow
 
 Use this workflow whenever you introduce a **new feature**: a new
@@ -29,6 +35,11 @@ Start each file from the matching template in
    carries: goal, scope, refs to `US-N` and the design section, a
    testable DoD, ≤ 300–400 LOC. Tech-lead sign-off before implementation
    starts.
+
+**Review gate between every phase.** Run [`REVIEW.md`](REVIEW.md)
+against the spec twice — after requirements+design is drafted (before
+tasks decomposition), and after tasks is drafted (before tech-lead
+sign-off). A `FAIL` blocks progression to the next phase.
 
 **The spec is the source of truth.** When code and spec diverge, update
 the spec first, the code second. Out-of-scope work goes back to

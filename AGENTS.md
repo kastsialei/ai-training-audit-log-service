@@ -13,6 +13,7 @@ Java 21 · Spring Boot 3 · PostgreSQL 17 + Flyway · Docker · JUnit 5 + Testco
 | Full conventions | [ARCHITECTURE.md](ARCHITECTURE.md)                         |
 | Product glossary | [product.md](product.md)                                   |
 | Spec workflow (new features) | [.specs/WORKFLOW.md](.specs/WORKFLOW.md)   |
+| Spec review checklist | [.specs/REVIEW.md](.specs/REVIEW.md)              |
 | Spec templates | [.templates/](.templates/)                                 |
 | Run locally | `docker compose -f deploy/docker-compose.yml up -d`        |
 | Format code | `mvn spotless:apply`                                       |
@@ -70,3 +71,5 @@ edits.
   (e.g. `(recorded_at DESC, id DESC)`).
 
 Full rules, EARS shapes, and project invariants → [.specs/WORKFLOW.md](.specs/WORKFLOW.md).
+Review the spec against [.specs/REVIEW.md](.specs/REVIEW.md) before
+decomposing tasks and again before implementation.
