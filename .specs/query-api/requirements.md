@@ -28,8 +28,12 @@ honored in practice without a query surface.
 
 **Acceptance criteria**
 
-- [ ] Given an `actor` and a time range, when I call `GET /audit-events?actor=u_42&from=2026-04-01T00:00:00Z&to=2026-05-01T00:00:00Z`, then the response is `200 application/json` with body `{ "items": [...], "next_cursor": "..."|null }`.
-- [ ] Given multiple filters provided together, when I call the endpoint, then results match **all** filters (AND semantics) using **exact** match for `actor`, `resource`, `event_type`, and `outcome`.
+- [ ] Given a single `actor` and a time range, when I call `GET /audit-events?actor=u_42&from=2026-04-01T00:00:00Z&to=2026-05-01T00:00:00Z`, then the response is `200 application/json` with body `{ "items": [...], "next_cursor": "..."|null }`.
+- [ ] Given `actor` contains a comma-separated list of 2 to 10 actor values, when I call `GET /audit-events?actor=u_42,u_99&from=2026-04-01T00:00:00Z&to=2026-05-01T00:00:00Z`, then the response includes events whose `actor` exactly matches any supplied actor value and excludes events whose `actor` matches none of them.
+- [ ] Given `actor` contains duplicate values and more than 10 comma-separated values before deduplication, when I call the endpoint, then the request is rejected with `400 application/problem+json` whose `detail` names the `actor` limit.
+- [ ] Given `actor` is supplied more than once as repeated query parameters (`?actor=u_42&actor=u_99`), when I call the endpoint, then the request is rejected with `400 application/problem+json` whose `detail` says `actor` must be supplied as one comma-separated parameter.
+- [ ] Given `actor` contains a whitespace-padded value around a comma (`actor=u_42,%20u_99` or `actor=u_42%20,u_99`), when I call the endpoint, then the request is rejected with `400 application/problem+json` whose `detail` names the invalid `actor` value.
+- [ ] Given multiple filters provided together, when I call the endpoint, then results match **all** non-actor filters (AND semantics), match **any** value in the `actor` list, and use **exact** match for `actor`, `resource`, `event_type`, and `outcome`.
 - [ ] Given each `from` and `to` is independently optional, when I provide only `from`, then results are bounded below only; when I provide only `to`, only above; when I provide neither, time is unbounded (other filters still apply).
 - [ ] Given the response, each `items[i]` exposes the same fields persisted by ingestion, in snake_case: `id` (UUID), `recorded_at` (UTC, ISO-8601 with offset), `actor` (string), `event_type` (string), `resource` (string), `outcome` (`SUCCESS`|`DENIED`|`ERROR`|null), `context` (JSON object).
 - [ ] Given my window has zero matches, when I call the endpoint, then I receive `200` with `items: []` and `next_cursor: null`.
@@ -56,6 +60,8 @@ honored in practice without a query surface.
 
 - [ ] Given a result set larger than `limit`, when I call without `cursor`, then I receive the first page and a non-null `next_cursor`.
 - [ ] Given a `next_cursor` from a prior response, when I pass it as `cursor=...`, then I receive the next contiguous page — no duplicates and no skipped events relative to the prior page (under append-only ingestion at newer timestamps).
+- [ ] Given a result set filtered by a comma-separated `actor` list is larger than `limit`, when I walk pages using `next_cursor`, then each page keeps the original actor-list filter and returns no duplicates or skipped events relative to that filter set.
+- [ ] Given a cursor issued for `actor=u_42,u_99`, when I replay it with the same actor set in a different order (`actor=u_99,u_42`), then the cursor is accepted as the same filter set.
 - [ ] Given the last page, when I read it, then `next_cursor` is `null`.
 - [ ] Given no `limit`, the default is `50`. Given `limit < 1` or `limit > 200`, then the request is rejected with `400 application/problem+json`.
 - [ ] Given a malformed, tampered, or otherwise unparseable `cursor`, then the request is rejected with `400 application/problem+json` with `type` either `invalid-cursor` (structurally unparseable or missing fields) or `cursor-filter-mismatch` (structurally valid but fingerprint mismatch against current filters), and the body does not leak cursor internals.
@@ -98,5 +104,10 @@ honored in practice without a query surface.
 
 - [ ] Which DB indexes back the filterable columns to avoid full-table scans? — owner: implementer; needed by: before merge. Candidates: `(recorded_at DESC, id DESC)` always; partial / composite on `(actor, recorded_at DESC)` and `(resource, recorded_at DESC)`. Resolved in `design.md`.
 - [ ] Multi-value `outcome` filter (e.g., `outcome=DENIED,ERROR`) for security investigators? — owner: product; needed by: post-MVP. Default for v1: single value.
+- [x] Actor-list matching semantics? — Resolved: OR semantics, equivalent to SQL `actor IN (...)`.
+- [x] Repeated query parameters (`?actor=a1&actor=a2`)? — Resolved: rejected; comma-separated single parameter only.
+- [x] Whitespace around actor-list commas? — Resolved: not trimmed; whitespace-padded values are invalid.
+- [x] Duplicate actor values and max limit? — Resolved: max 10 is enforced before deduplication.
+- [x] Actor-list cursor fingerprint order? — Resolved: actor-list order is canonicalized, so `actor=a1,a2` and `actor=a2,a1` are equivalent filter sets.
 - [ ] Maximum time-window size and rate limiting to bound expensive scans? — owner: SRE; needed by: pre-prod hardening.
 - [x] Cursor signing / integrity (HMAC vs unsigned opaque blob)? — Resolved in `design.md → §6 "Cursor format"`: unsigned + SHA-256 fingerprint over canonicalized filters. Security review may upgrade to HMAC before pre-prod; tracked in `design.md → §12` under owner: security review.

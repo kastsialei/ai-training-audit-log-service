@@ -1,3 +1,38 @@
+# Delta — 2026-05-13: Multi-actor query parameter
+
+Product requirement added after the initial query API task set: `actor`
+must accept a comma-separated list of up to 10 actor values in one request
+(`?actor=a1,a2,...`). More than 10 actors is a client error.
+Product clarification resolved the list semantics: SQL-equivalent
+`actor IN (...)`, comma-separated single parameter only, no trimming around
+commas, max 10 enforced before deduplication, and actor-list order
+canonicalized for cursor fingerprints.
+
+## requirements.md — US-1 and US-3 updated
+
+- US-1 now distinguishes single-actor and comma-separated multi-actor calls.
+- US-1 now requires exact matching against any supplied actor value while
+  preserving AND semantics for the other filters.
+- US-1 now requires `400 application/problem+json` when the actor list has
+  more than 10 values before deduplication.
+- US-1 now rejects repeated `actor` query parameters and whitespace-padded
+  actor values.
+- US-3 now requires cursor pagination to preserve the actor-list filter across
+  pages without duplicates or skips.
+- US-3 now treats actor-list order as equivalent for cursor filter matching.
+
+## requirements.md — Open questions resolved
+
+- Actor-list matching uses OR semantics.
+- Repeated query parameters (`?actor=a1&actor=a2`) are rejected.
+- Whitespace around commas is not trimmed; whitespace-padded values are invalid.
+- Duplicate actor values count toward the 10-value limit before deduplication.
+- Actor-list order is canonicalized for cursor fingerprints.
+
+Why: design, glossary, tasks, and code still model `actor` as a single value.
+The requirements change is recorded first so follow-up design/task/code updates
+can trace to a clear product delta.
+
 # Delta — 2026-05-11 (pass 2): InvalidAuditEventException → 400
 
 Open question resolved during T-1 plan review: bad-input domain
