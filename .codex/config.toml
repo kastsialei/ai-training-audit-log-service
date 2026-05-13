@@ -1,0 +1,9 @@
+[features]
+hooks = true
+
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = '/usr/bin/python3 "$(git rev-parse --show-toplevel)/.codex/hooks/spec_self_eval_stop.py"'
+timeout = 1800
+statusMessage = "Running spec self-eval"

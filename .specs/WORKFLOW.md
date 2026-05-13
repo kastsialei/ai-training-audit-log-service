@@ -36,7 +36,7 @@ Start each file from the matching template in
    testable DoD, ≤ 300–400 LOC. Tech-lead sign-off before implementation
    starts.
 
-**Review gate between every phase.** Run [`REVIEW.md`](REVIEW.md)
+**Review gate between every phase.** Run the `spec-self-eval` skill
 against the spec twice — after requirements+design is drafted (before
 tasks decomposition), and after tasks is drafted (before tech-lead
 sign-off). A `FAIL` blocks progression to the next phase.

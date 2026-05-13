@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Self Eval"
+  short_description: "Review audit-log-service specs"
+  default_prompt: "Review an audit-log-service feature spec and write the gated report."
