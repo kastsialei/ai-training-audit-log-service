@@ -10,8 +10,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import net.sam.ai.engineering.audit.domain.ingestion.AuditEvent;
-import net.sam.ai.engineering.audit.domain.ingestion.Outcome;
+import net.sam.ai.engineering.audit.domain.shared.AuditEvent;
+import net.sam.ai.engineering.audit.domain.shared.Outcome;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

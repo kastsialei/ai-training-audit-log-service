@@ -1,4 +1,4 @@
-package net.sam.ai.engineering.audit.domain.ingestion;
+package net.sam.ai.engineering.audit.domain.shared;
 
 public enum Outcome {
     SUCCESS,

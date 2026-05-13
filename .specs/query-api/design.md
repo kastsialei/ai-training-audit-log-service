@@ -176,11 +176,15 @@ Rationale per index:
   cardinality for a useful index alone; queries with `outcome` plus
   another filter use the other filter's index and a recheck.
 
-Estimated runtime: indexes are non-blocking with `CREATE INDEX
-CONCURRENTLY`. **However Flyway runs migrations inside a transaction by
-default**, so V3 must opt out (`-- flyway:executeInTransaction=false`)
-and use `CONCURRENTLY`. On a ~10M-row table this is ~1–3 minutes per
-index.
+Estimated runtime: indexes are created with plain `CREATE INDEX` in a
+transactional migration. V2 creates `audit_events` in the same migration
+series, so the table is empty when V3–V6 run — both in Testcontainers
+and on the first production deploy. There is no concurrent ingestion to
+block; `CONCURRENTLY` would only add the well-known
+HikariCP-`WaitForOlderSnapshots` hang risk in Spring Boot startup
+without buying anything for an empty table. Any future index added to
+the populated production table belongs in a separate later migration
+that **does** use `CONCURRENTLY` + `-- flyway:executeInTransaction=false`.
 
 Storage growth: each index is ~5–10% of table size depending on column
 selectivity. Acceptable.
@@ -481,16 +485,19 @@ as-is.
 
 **Rollout.**
 - Single environment promotion. No feature flag — endpoint is
-  additive; rollback = revert PR + revert V3 migration (indexes can
-  be dropped without data loss).
-- V3 migration uses `CREATE INDEX CONCURRENTLY` so it doesn't block
-  ingestion.
+  additive; rollback = revert PR + revert V3–V6 migrations (indexes
+  can be dropped without data loss).
+- V3–V6 migrations use plain `CREATE INDEX`. The table is empty at
+  the time they run (V2 creates it in the same series), so blocking
+  is a non-issue. `CONCURRENTLY` is intentionally avoided to keep
+  Spring Boot + HikariCP startup deterministic.
 
 **Rollback.**
 - Code revert is clean (no schema change beyond additive indexes).
 - Indexes can be dropped on rollback if they cause unexpected write
-  amplification: `DROP INDEX CONCURRENTLY …` in a follow-up
-  migration. (Never edit V3.)
+  amplification, in a follow-up migration that uses
+  `DROP INDEX CONCURRENTLY …` against the then-populated production
+  table. (Never edit V3–V6.)
 
 ## 11. Test strategy
 

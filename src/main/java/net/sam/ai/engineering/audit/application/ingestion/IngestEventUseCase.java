@@ -1,6 +1,6 @@
 package net.sam.ai.engineering.audit.application.ingestion;
 
-import net.sam.ai.engineering.audit.domain.ingestion.AuditEvent;
+import net.sam.ai.engineering.audit.domain.shared.AuditEvent;
 import org.springframework.stereotype.Service;
 
 @Service

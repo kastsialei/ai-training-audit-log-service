@@ -3,7 +3,7 @@ package net.sam.ai.engineering.audit.api.ingestion;
 import jakarta.validation.Valid;
 import net.sam.ai.engineering.audit.application.ingestion.IngestEventCommand;
 import net.sam.ai.engineering.audit.application.ingestion.IngestEventUseCase;
-import net.sam.ai.engineering.audit.domain.ingestion.AuditEvent;
+import net.sam.ai.engineering.audit.domain.shared.AuditEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -3,9 +3,12 @@ package net.sam.ai.engineering.audit.api.ingestion;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -78,7 +81,13 @@ class IngestionIT {
                 """;
 
         mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", equalTo("https://audit-log-service/problems/validation-error")))
+                .andExpect(jsonPath("$.title", notNullValue()))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.detail", notNullValue()))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
     }
 
     @Test
@@ -94,7 +103,79 @@ class IngestionIT {
                 """;
 
         mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", equalTo("https://audit-log-service/problems/validation-error")))
+                .andExpect(jsonPath("$.title", notNullValue()))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.detail", notNullValue()))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
+    }
+
+    @Test
+    void rejectsMalformedJsonBody() throws Exception {
+        String body = "{ not valid json";
+
+        mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type", equalTo("https://audit-log-service/problems/malformed-request")))
+                .andExpect(jsonPath("$.status", equalTo(400)))
+                .andExpect(jsonPath("$.instance", equalTo("/audit-events")));
+    }
+
+    @Test
+    void postWithCorrelationId_echoesHeader() throws Exception {
+        String suppliedId = "2f3c4d5e-6789-4abc-9def-0123456789ab";
+        String body =
+                """
+                {
+                  "actor": "alice@example.com",
+                  "event_type": "user.login",
+                  "resource": "user:42",
+                  "context": {}
+                }
+                """;
+
+        mockMvc.perform(post("/audit-events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", suppliedId)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("X-Correlation-Id", suppliedId));
+    }
+
+    @Test
+    void postWithoutCorrelationId_returnsGeneratedUuid() throws Exception {
+        String body =
+                """
+                {
+                  "actor": "alice@example.com",
+                  "event_type": "user.login",
+                  "resource": "user:42",
+                  "context": {}
+                }
+                """;
+
+        mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(
+                        "X-Correlation-Id",
+                        matchesPattern("^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")));
+    }
+
+    @Test
+    void postInvalidBody_responseStillCarriesCorrelationId() throws Exception {
+        String body =
+                """
+                { "event_type": "user.login", "resource": "user:42", "context": {} }
+                """;
+
+        mockMvc.perform(post("/audit-events").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string(
+                        "X-Correlation-Id",
+                        matchesPattern("^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")));
     }
 
     @Test

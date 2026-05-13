@@ -1,4 +1,4 @@
-package net.sam.ai.engineering.audit.domain.ingestion;
+package net.sam.ai.engineering.audit.domain.shared;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import net.sam.ai.engineering.audit.domain.ingestion.InvalidAuditEventException;
 import org.junit.jupiter.api.Test;
 
 class AuditEventTest {
