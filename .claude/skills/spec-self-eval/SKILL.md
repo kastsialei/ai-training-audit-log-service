@@ -184,12 +184,25 @@ Write the report — *do not* append to a prior review file, and do not
 touch `requirements.md`/`design.md`/`tasks.md`. This skill is
 read-only against the spec; the only file it creates is the report.
 
+The report must begin with a YAML frontmatter block whose `spec_hashes`
+key records a SHA-256 of each spec-gating file — `requirements.md`,
+`design.md`, and `tasks.md` — using the file bytes exactly as they exist
+on disk at review time. If a tracked file is absent, write `absent` for
+that file. The Stop hook reads this block to decide whether a later turn
+changed the spec and needs a fresh review.
+
 ## Report format
 
 Use this template verbatim — it's the contract a future reader (and
 the author iterating on the spec) relies on.
 
 ```markdown
+---
+spec_hashes:
+  requirements.md: <64-hex-sha256-or-absent>
+  design.md: <64-hex-sha256-or-absent>
+  tasks.md: <64-hex-sha256-or-absent>
+---
 # Spec self-eval — <feature>
 
 - **Gate:** Gate 1 (requirements + design) | Gate 2 (requirements + design + tasks)

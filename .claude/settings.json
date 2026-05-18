@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.agents/scripts/spec_self_eval_stop.py\" --agent claude",
+            "timeout": 1800
+          }
+        ]
+      }
+    ]
+  }
+}
